@@ -15,6 +15,18 @@ func TestParser(t *testing.T) {
 			input:    "{\"foo\":\"bar\"}",
 			expected: JSONObject{Fields: map[string]JSONValue{"foo": JSONString{Value: "bar"}}},
 		},
+		{
+			name:  "array with all types",
+			input: "[\"string\",1,2.5,true,false,null]",
+			expected: JSONArray{Elements: []JSONValue{
+				JSONString{Value: "string"},
+				JSONInt{Value: 1},
+				JSONFloat{Value: 2.5},
+				JSONBool{Value: true},
+				JSONBool{Value: false},
+				JSONNull{},
+			}},
+		},
 	}
 
 	for _, test := range tests {

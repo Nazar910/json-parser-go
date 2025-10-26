@@ -3,29 +3,22 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 // Define a proper JSON AST (Abstract Syntax Tree)
 type JSONValue interface {
-	jsonValue() // marker method
 	Equals(other JSONValue) bool
 }
 
 // Concrete types for each JSON type
 type JSONNull struct{}
 type JSONBool struct{ Value bool }
-type JSONNumber struct{ Value float64 }
+type JSONInt struct{ Value int }
+type JSONFloat struct{ Value float64 }
 type JSONString struct{ Value string }
 type JSONArray struct{ Elements []JSONValue }
 type JSONObject struct{ Fields map[string]JSONValue }
-
-// Implement the interface
-func (JSONNull) jsonValue()   {}
-func (JSONBool) jsonValue()   {}
-func (JSONNumber) jsonValue() {}
-func (JSONString) jsonValue() {}
-func (JSONArray) jsonValue()  {}
-func (JSONObject) jsonValue() {}
 
 func (n JSONNull) Equals(other JSONValue) bool {
 	_, ok := other.(JSONNull)
@@ -63,6 +56,36 @@ func (o JSONObject) Equals(other JSONValue) bool {
 	return false
 }
 
+func (a JSONArray) Equals(other JSONValue) bool {
+	if other, ok := other.(JSONArray); ok {
+		if len(a.Elements) != len(other.Elements) {
+			return false
+		}
+
+		for i := range a.Elements {
+			if a.Elements[i] != other.Elements[i] {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	return false
+}
+
+func (num JSONInt) Equals(other JSONValue) bool {
+	otherInt, ok := other.(JSONInt)
+
+	return ok && num.Value == otherInt.Value
+}
+
+func (num JSONFloat) Equals(other JSONValue) bool {
+	otherFloat, ok := other.(JSONFloat)
+
+	return ok && num.Value == otherFloat.Value
+}
+
 type Parser struct {
 	lexer        Lexer
 	currentToken Token
@@ -84,7 +107,49 @@ func (p *Parser) Parse() (JSONValue, error) {
 		return p.object()
 	}
 
+	if p.currentToken.Type == OPEN_BRACKET {
+		return p.array()
+	}
+
 	return JSONNull{}, fmt.Errorf("Unsupported token %v", p.currentToken)
+}
+
+func (p *Parser) array() (JSONArray, error) {
+	err := p.eat(OPEN_BRACKET)
+
+	if err != nil {
+		return JSONArray{}, err
+	}
+
+	// TODO: possible special case for empty array
+
+	arr := JSONArray{Elements: []JSONValue{}}
+
+	elem, err := p.value()
+
+	if err != nil {
+		return JSONArray{}, err
+	}
+
+	arr.Elements = append(arr.Elements, elem)
+
+	for p.currentToken.Type == COMMA {
+		err := p.eat(COMMA)
+
+		if err != nil {
+			return JSONArray{}, err
+		}
+
+		elem, err := p.value()
+
+		if err != nil {
+			return JSONArray{}, err
+		}
+
+		arr.Elements = append(arr.Elements, elem)
+	}
+
+	return arr, nil
 }
 
 func (p *Parser) object() (JSONObject, error) {
@@ -129,7 +194,57 @@ func (p *Parser) value() (JSONValue, error) {
 		return p.string()
 	}
 
-	return JSONNull{}, errors.New("Unsupported token type")
+	if p.currentToken.Type == INT {
+		return p.int()
+	}
+
+	if p.currentToken.Type == FLOAT {
+		return p.float()
+	}
+
+	if p.currentToken.Type == BOOLEAN {
+		return p.boolean()
+	}
+
+	if p.currentToken.Type == NULL {
+		return p.null()
+	}
+
+	return JSONNull{}, fmt.Errorf("Unsupported token type %s", p.currentToken.Type)
+}
+
+func (p *Parser) int() (JSONInt, error) {
+	intStr := p.currentToken.Value
+
+	p.eat(INT)
+
+	intNum, err := strconv.ParseInt(intStr, 10, 32)
+
+	return JSONInt{Value: int(intNum)}, err
+}
+
+func (p *Parser) float() (JSONFloat, error) {
+	floatStr := p.currentToken.Value
+
+	p.eat(FLOAT)
+
+	floatNum, err := strconv.ParseFloat(floatStr, 32)
+
+	return JSONFloat{Value: floatNum}, err
+}
+
+func (p *Parser) boolean() (JSONBool, error) {
+	booleanStr := p.currentToken.Value
+
+	p.eat(BOOLEAN)
+
+	return JSONBool{Value: booleanStr == "true"}, nil
+}
+
+func (p *Parser) null() (JSONNull, error) {
+	p.eat(NULL)
+
+	return JSONNull{}, nil
 }
 
 func (p *Parser) string() (JSONString, error) {
