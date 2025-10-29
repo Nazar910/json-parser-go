@@ -9,18 +9,18 @@ import (
 type TokenType string
 
 const (
-	OPEN_CURLY    TokenType = "OPEN_CURLY"
-	CLOSE_CURLY   TokenType = "CLOSE_CURLY"
-	OPEN_BRACKET  TokenType = "OPEN_BRACKET"
-	CLOSE_BRACKET TokenType = "CLOSE_BRACKET"
-	COLON         TokenType = "COLON"
-	COMMA         TokenType = "COMMA"
-	INT           TokenType = "INT"
-	FLOAT         TokenType = "FLOAT"
-	BOOLEAN       TokenType = "BOOLEAN"
-	NULL          TokenType = "NULL"
-	STRING        TokenType = "STRING"
-	EOF           TokenType = "EOF"
+	OpenCurly    TokenType = "OPEN_CURLY"
+	CloseCurly   TokenType = "CLOSE_CURLY"
+	OpenBracket  TokenType = "OPEN_BRACKET"
+	CloseBracket TokenType = "CLOSE_BRACKET"
+	Colon        TokenType = "COLON"
+	Comma        TokenType = "COMMA"
+	Int          TokenType = "INT"
+	Float        TokenType = "FLOAT"
+	Boolean      TokenType = "BOOLEAN"
+	Null         TokenType = "NULL"
+	String       TokenType = "STRING"
+	Eof          TokenType = "EOF"
 )
 
 type Token struct {
@@ -28,6 +28,7 @@ type Token struct {
 	Value string
 }
 
+// Lexer tokenizes JSON input into tokens
 type Lexer struct {
 	input       string
 	pos         int
@@ -35,10 +36,14 @@ type Lexer struct {
 }
 
 func NewLexer(input string) *Lexer {
+	var ch byte
+	if len(input) > 0 {
+		ch = input[0]
+	}
 	return &Lexer{
 		input:       input,
 		pos:         0,
-		currentChar: input[0],
+		currentChar: ch,
 	}
 }
 
@@ -68,7 +73,7 @@ func (l *Lexer) readString() (Token, error) {
 	value := l.input[startPos:l.pos]
 	l.advance() // Skip closing quote
 
-	return Token{Type: STRING, Value: value}, nil
+	return Token{Type: String, Value: value}, nil
 }
 
 func (l *Lexer) readNumber() (Token, error) {
@@ -86,11 +91,11 @@ func (l *Lexer) readNumber() (Token, error) {
 		}
 
 		value := l.input[startPos:l.pos]
-		return Token{Type: FLOAT, Value: value}, nil
+		return Token{Type: Float, Value: value}, nil
 	}
 
 	value := l.input[startPos:l.pos]
-	return Token{Type: INT, Value: value}, nil
+	return Token{Type: Int, Value: value}, nil
 }
 
 func (l *Lexer) readBoolean() (Token, error) {
@@ -104,12 +109,12 @@ func (l *Lexer) readBoolean() (Token, error) {
 
 	for i := 0; i < len(expectedString); i++ {
 		if l.currentChar != expectedString[i] {
-			return Token{}, fmt.Errorf("Unexpected char '%c'", l.currentChar)
+			return Token{}, fmt.Errorf("unexpected char '%c'", l.currentChar)
 		}
 		l.advance()
 	}
 
-	return Token{Type: BOOLEAN, Value: expectedString}, nil
+	return Token{Type: Boolean, Value: expectedString}, nil
 }
 
 func (l *Lexer) readNull() (Token, error) {
@@ -117,44 +122,45 @@ func (l *Lexer) readNull() (Token, error) {
 
 	for i := 0; i < len(expected); i++ {
 		if l.currentChar != expected[i] {
-			return Token{}, fmt.Errorf("Unexpected char '%c'", l.currentChar)
+			return Token{}, fmt.Errorf("unexpected char '%c'", l.currentChar)
 		}
 		l.advance()
 	}
 
-	return Token{Type: NULL, Value: "null"}, nil
+	return Token{Type: Null, Value: "null"}, nil
 }
 
-func (l *Lexer) GetNextToken() (Token, error) {
-	if l.pos >= len(l.input) {
-		return Token{Type: EOF, Value: ""}, nil
+// NextToken returns the next token from the input
+func (l *Lexer) NextToken() (Token, error) {
+	for l.pos < len(l.input) && unicode.IsSpace(rune(l.currentChar)) {
+		l.advance()
 	}
 
-	for unicode.IsSpace(rune(l.currentChar)) {
-		l.advance()
+	if l.pos >= len(l.input) {
+		return Token{Type: Eof, Value: ""}, nil
 	}
 
 	switch l.currentChar {
 	case '{':
 		l.advance()
-		return Token{Type: OPEN_CURLY, Value: "{"}, nil
+		return Token{Type: OpenCurly, Value: "{"}, nil
 	case '"':
 		return l.readString()
 	case ':':
 		l.advance()
-		return Token{Type: COLON, Value: ":"}, nil
+		return Token{Type: Colon, Value: ":"}, nil
 	case '}':
 		l.advance()
-		return Token{Type: CLOSE_CURLY, Value: "}"}, nil
+		return Token{Type: CloseCurly, Value: "}"}, nil
 	case '[':
 		l.advance()
-		return Token{Type: OPEN_BRACKET, Value: "["}, nil
+		return Token{Type: OpenBracket, Value: "["}, nil
 	case ']':
 		l.advance()
-		return Token{Type: CLOSE_BRACKET, Value: "]"}, nil
+		return Token{Type: CloseBracket, Value: "]"}, nil
 	case ',':
 		l.advance()
-		return Token{Type: COMMA, Value: ","}, nil
+		return Token{Type: Comma, Value: ","}, nil
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 		return l.readNumber()
 	case 't', 'f':
@@ -162,6 +168,6 @@ func (l *Lexer) GetNextToken() (Token, error) {
 	case 'n':
 		return l.readNull()
 	default:
-		return Token{}, fmt.Errorf("Unknown character '%c'", l.currentChar)
+		return Token{}, fmt.Errorf("unknown character '%c'", l.currentChar)
 	}
 }

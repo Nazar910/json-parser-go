@@ -96,18 +96,18 @@ func NewParser(input string) Parser {
 }
 
 func (p *Parser) Parse() (JSONValue, error) {
-	currentToken, error := p.lexer.GetNextToken()
+	currentToken, error := p.lexer.NextToken()
 	p.currentToken = currentToken
 
 	if error != nil {
 		return JSONNull{}, error
 	}
 
-	if p.currentToken.Type == OPEN_CURLY {
+	if p.currentToken.Type == OpenCurly {
 		return p.object()
 	}
 
-	if p.currentToken.Type == OPEN_BRACKET {
+	if p.currentToken.Type == OpenBracket {
 		return p.array()
 	}
 
@@ -115,7 +115,7 @@ func (p *Parser) Parse() (JSONValue, error) {
 }
 
 func (p *Parser) array() (JSONArray, error) {
-	err := p.eat(OPEN_BRACKET)
+	err := p.eat(OpenBracket)
 
 	if err != nil {
 		return JSONArray{}, err
@@ -133,8 +133,8 @@ func (p *Parser) array() (JSONArray, error) {
 
 	arr.Elements = append(arr.Elements, elem)
 
-	for p.currentToken.Type == COMMA {
-		err := p.eat(COMMA)
+	for p.currentToken.Type == Comma {
+		err := p.eat(Comma)
 
 		if err != nil {
 			return JSONArray{}, err
@@ -153,7 +153,7 @@ func (p *Parser) array() (JSONArray, error) {
 }
 
 func (p *Parser) object() (JSONObject, error) {
-	err := p.eat(OPEN_CURLY)
+	err := p.eat(OpenCurly)
 
 	if err != nil {
 		return JSONObject{}, err
@@ -165,7 +165,7 @@ func (p *Parser) object() (JSONObject, error) {
 		return JSONObject{}, err
 	}
 
-	err = p.eat(COLON)
+	err = p.eat(Colon)
 
 	if err != nil {
 		return JSONObject{}, err
@@ -177,7 +177,7 @@ func (p *Parser) object() (JSONObject, error) {
 		return JSONObject{}, err
 	}
 
-	err = p.eat(CLOSE_CURLY)
+	err = p.eat(CloseCurly)
 
 	if err != nil {
 		return JSONObject{}, err
@@ -190,31 +190,31 @@ func (p *Parser) object() (JSONObject, error) {
 }
 
 func (p *Parser) value() (JSONValue, error) {
-	if p.currentToken.Type == STRING {
+	if p.currentToken.Type == String {
 		return p.string()
 	}
 
-	if p.currentToken.Type == INT {
+	if p.currentToken.Type == Int {
 		return p.int()
 	}
 
-	if p.currentToken.Type == FLOAT {
+	if p.currentToken.Type == Float {
 		return p.float()
 	}
 
-	if p.currentToken.Type == BOOLEAN {
+	if p.currentToken.Type == Boolean {
 		return p.boolean()
 	}
 
-	if p.currentToken.Type == NULL {
+	if p.currentToken.Type == Null {
 		return p.null()
 	}
 
-	if p.currentToken.Type == OPEN_CURLY {
+	if p.currentToken.Type == OpenCurly {
 		return p.object()
 	}
 
-	if p.currentToken.Type == OPEN_BRACKET {
+	if p.currentToken.Type == OpenBracket {
 		return p.array()
 	}
 
@@ -224,7 +224,7 @@ func (p *Parser) value() (JSONValue, error) {
 func (p *Parser) int() (JSONInt, error) {
 	intStr := p.currentToken.Value
 
-	p.eat(INT)
+	p.eat(Int)
 
 	intNum, err := strconv.ParseInt(intStr, 10, 32)
 
@@ -234,7 +234,7 @@ func (p *Parser) int() (JSONInt, error) {
 func (p *Parser) float() (JSONFloat, error) {
 	floatStr := p.currentToken.Value
 
-	p.eat(FLOAT)
+	p.eat(Float)
 
 	floatNum, err := strconv.ParseFloat(floatStr, 32)
 
@@ -244,20 +244,20 @@ func (p *Parser) float() (JSONFloat, error) {
 func (p *Parser) boolean() (JSONBool, error) {
 	booleanStr := p.currentToken.Value
 
-	p.eat(BOOLEAN)
+	p.eat(Boolean)
 
 	return JSONBool{Value: booleanStr == "true"}, nil
 }
 
 func (p *Parser) null() (JSONNull, error) {
-	p.eat(NULL)
+	p.eat(Null)
 
 	return JSONNull{}, nil
 }
 
 func (p *Parser) string() (JSONString, error) {
 	str := p.currentToken.Value
-	err := p.eat(STRING)
+	err := p.eat(String)
 	if err != nil {
 		return JSONString{}, err
 	}
@@ -266,7 +266,7 @@ func (p *Parser) string() (JSONString, error) {
 
 func (p *Parser) eat(expectedType TokenType) error {
 	if p.currentToken.Type == expectedType {
-		nextToken, error := p.lexer.GetNextToken()
+		nextToken, error := p.lexer.NextToken()
 		if error != nil {
 			return error
 		}
