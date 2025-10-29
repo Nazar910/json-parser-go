@@ -72,6 +72,18 @@ func TestLexerGetNextToken(t *testing.T) {
 				{Type: EOF, Value: ""},
 			},
 		},
+		{
+			name:  "should ignore whitespaces",
+			input: "{  \"foo\" :     1}",
+			expected: []Token{
+				{Type: OPEN_CURLY, Value: "{"},
+				{Type: STRING, Value: "foo"},
+				{Type: COLON, Value: ":"},
+				{Type: INT, Value: "1"},
+				{Type: CLOSE_CURLY, Value: "}"},
+				{Type: EOF, Value: ""},
+			},
+		},
 	}
 
 	for _, test := range tests {

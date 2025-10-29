@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"unicode"
 )
 
 type TokenType string
@@ -127,6 +128,10 @@ func (l *Lexer) readNull() (Token, error) {
 func (l *Lexer) GetNextToken() (Token, error) {
 	if l.pos >= len(l.input) {
 		return Token{Type: EOF, Value: ""}, nil
+	}
+
+	for unicode.IsSpace(rune(l.currentChar)) {
+		l.advance()
 	}
 
 	switch l.currentChar {
