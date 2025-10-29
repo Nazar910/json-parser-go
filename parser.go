@@ -63,7 +63,7 @@ func (a JSONArray) Equals(other JSONValue) bool {
 		}
 
 		for i := range a.Elements {
-			if a.Elements[i] != other.Elements[i] {
+			if !a.Elements[i].Equals(other.Elements[i]) {
 				return false
 			}
 		}
@@ -208,6 +208,14 @@ func (p *Parser) value() (JSONValue, error) {
 
 	if p.currentToken.Type == NULL {
 		return p.null()
+	}
+
+	if p.currentToken.Type == OPEN_CURLY {
+		return p.object()
+	}
+
+	if p.currentToken.Type == OPEN_BRACKET {
+		return p.array()
 	}
 
 	return JSONNull{}, fmt.Errorf("Unsupported token type %s", p.currentToken.Type)

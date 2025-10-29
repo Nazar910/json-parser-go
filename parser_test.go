@@ -27,6 +27,14 @@ func TestParser(t *testing.T) {
 				JSONNull{},
 			}},
 		},
+		{
+			name:  "array with nested object and array",
+			input: "[{\"foo\":\"bar\"},[1,2,3]]",
+			expected: JSONArray{Elements: []JSONValue{
+				JSONObject{Fields: map[string]JSONValue{"foo": JSONString{Value: "bar"}}},
+				JSONArray{Elements: []JSONValue{JSONInt{Value: 1}, JSONInt{Value: 2}, JSONInt{Value: 3}}},
+			}},
+		},
 	}
 
 	for _, test := range tests {

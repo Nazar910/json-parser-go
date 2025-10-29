@@ -157,6 +157,6 @@ func (l *Lexer) GetNextToken() (Token, error) {
 	case 'n':
 		return l.readNull()
 	default:
-		return Token{}, errors.New("unknown character")
+		return Token{}, fmt.Errorf("Unknown character '%c'", l.currentChar)
 	}
 }
